@@ -50,6 +50,42 @@ func (s *coinServer) AddCoins(ctx context.Context, request *coin_service.AddCoin
 	}, nil
 }
 
-func (s *coinServer) RemoveCoins(context.Context, *coin_service.RemoveCoinsRequest) (*coin_service.CoinsListResponse, error) {
-	panic("implement me")
+func (s *coinServer) RemoveCoins(ctx context.Context,request *coin_service.RemoveCoinsRequest) (*coin_service.CoinsListResponse, error) {
+	f err := request.Validate(); err != nil {
+		return nil, twirp.InvalidArgumentError(err.Error(), "")
+	}
+
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return nil, twirp.InternalError(err.Error())
+	}
+
+	var coinkind Kind
+	var coinCount int32
+	// we need to get all coin respective  count by pot id
+	// weighted random preference to coin to remove
+	//get coin type, and count to remove
+
+	//make a negative coin entry in coins table with reference to pot id
+	// feel like a Coin parameter is missing in RemoveCoinsRequest. needs to be added
+	for _, coin := range request.Coins {
+		fmt.Println(coin)
+		newCoin := models.Coin{
+			PotID: request.PotId,
+			Denomination: int32(coinkind),
+			CoinCount:- CoinCount,
+		}
+		err = newCoin.Save(tx)
+		if err != nil {
+			return nil, twirp.InvalidArgumentError(err.Error(), "")
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, twirp.NotFoundError(err.Error())
+	}
+
+	return &coin_service.CoinsListResponse{
+		Coins: request.Coins,
+	}, nil
 }
